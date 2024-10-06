@@ -21,8 +21,7 @@ func Init(configFile string, log *zap.Logger) {
 	logger = log
 	var cfg ResilienceConfig
 	paths := []string{"./", "/etc/goletan/ratelimiter/"}
-
-	_, err := config.LoadConfig(configFile, paths, &cfg, logger)
+	err := config.LoadConfig(configFile, paths, &cfg, logger)
 	if err != nil {
 		logger.Fatal("Failed to load rate limiter configuration", zap.Error(err))
 	}
