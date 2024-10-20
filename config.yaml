@@ -1,4 +1,4 @@
-# Resilience Config
+# Security Config
 
 circuit_breaker:
   failure_threshold: 5

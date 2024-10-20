@@ -2,6 +2,8 @@ package ratelimiter
 
 import (
 	"context"
+	"os"
+	"strings"
 	"sync"
 
 	"github.com/goletan/config"
@@ -20,11 +22,21 @@ var (
 func Init(configFile string, log *zap.Logger) {
 	logger = log
 	var cfg ResilienceConfig
-	paths := []string{"./", "/etc/goletan/ratelimiter/"}
-	err := config.LoadConfig(configFile, paths, &cfg, logger)
+
+	configPathsEnv := os.Getenv("RESILIENCE_CONFIG_PATHS")
+	var configPaths []string
+	if configPathsEnv != "" {
+		configPaths = strings.Split(configPathsEnv, ",")
+	} else {
+		configPaths = []string{"."}
+	}
+
+	// Load the configuration
+	err := config.LoadConfig("resilience", configPaths, &cfg, logger)
 	if err != nil {
 		logger.Fatal("Failed to load rate limiter configuration", zap.Error(err))
 	}
+
 	InitRateLimiter(cfg.RateLimiter.RPS, cfg.RateLimiter.Burst)
 }
 
