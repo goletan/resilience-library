@@ -1,5 +1,5 @@
 // /resilience/retry/retry.go
-package resilience
+package retry
 
 import (
 	"context"
