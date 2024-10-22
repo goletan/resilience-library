@@ -10,11 +10,10 @@ import (
 	"go.uber.org/zap"
 )
 
-func LoadResilienceConfig(configFile string, logger *zap.Logger) (*ResilienceConfig, error) {
-	var cfg ResilienceConfig
-	paths := []string{"./"}
+var cfg ResilienceConfig
 
-	if err := config.LoadConfig(configFile, paths, &cfg, logger); err != nil {
+func LoadResilienceConfig(logger *zap.Logger) (*ResilienceConfig, error) {
+	if err := config.LoadConfig("Resilience", &cfg, logger); err != nil {
 		logger.Error("Failed to load resilience configuration", zap.Error(err))
 		return nil, err
 	}
@@ -22,8 +21,8 @@ func LoadResilienceConfig(configFile string, logger *zap.Logger) (*ResilienceCon
 	return &cfg, nil
 }
 
-func NewDefaultResilienceService(log *zap.Logger, shouldRetry func(error) bool) *DefaultResilienceService {
-	cfg, err := LoadResilienceConfig("config.yaml", logger)
+func NewDefaultResilienceService(logger *zap.Logger, shouldRetry func(error) bool) *DefaultResilienceService {
+	cfg, err := LoadResilienceConfig(logger)
 	if err != nil {
 		logger.Fatal("Failed to load resilience configuration", zap.Error(err))
 	}
@@ -31,7 +30,7 @@ func NewDefaultResilienceService(log *zap.Logger, shouldRetry func(error) bool) 
 	return &DefaultResilienceService{
 		MaxRetries:  cfg.Retry.MaxRetries,
 		ShouldRetry: shouldRetry,
-		Logger:      log,
+		Logger:      logger,
 	}
 }
 

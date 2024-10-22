@@ -2,8 +2,6 @@ package ratelimiter
 
 import (
 	"context"
-	"os"
-	"strings"
 	"sync"
 
 	"github.com/goletan/config"
@@ -19,20 +17,11 @@ var (
 
 // Init initializes the rate limiter module by utilizing the configuration library.
 // This function loads the relevant configuration parameters and sets up the rate limiter accordingly.
-func Init(configFile string, log *zap.Logger) {
-	logger = log
+func Init(configFile string, logger *zap.Logger) {
 	var cfg ResilienceConfig
 
-	configPathsEnv := os.Getenv("RESILIENCE_CONFIG_PATHS")
-	var configPaths []string
-	if configPathsEnv != "" {
-		configPaths = strings.Split(configPathsEnv, ",")
-	} else {
-		configPaths = []string{"."}
-	}
-
 	// Load the configuration
-	err := config.LoadConfig("resilience", configPaths, &cfg, logger)
+	err := config.LoadConfig("Resilience", &cfg, logger)
 	if err != nil {
 		logger.Fatal("Failed to load rate limiter configuration", zap.Error(err))
 	}
