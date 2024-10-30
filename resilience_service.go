@@ -1,50 +1,36 @@
-// resilience/resilience_service.go
 package resilience
 
 import (
-	"context"
-
-	"github.com/goletan/config"
+	"github.com/goletan/resilience/bulkhead"
+	"github.com/goletan/resilience/circuit_breaker"
+	"github.com/goletan/resilience/rate_limiter"
+	"github.com/goletan/resilience/types"
 	"go.uber.org/zap"
 )
 
-var cfg ResilienceConfig
-
-func LoadResilienceConfig(logger *zap.Logger) (*ResilienceConfig, error) {
-	if err := config.LoadConfig("Resilience", &cfg, logger); err != nil {
-		logger.Error("Failed to load resilience configuration", zap.Error(err))
-		return nil, err
-	}
-
-	return &cfg, nil
-}
-
-func NewResilienceService(logger *zap.Logger, shouldRetry func(error) bool) *DefaultResilienceService {
+// NewResilienceService initializes a new DefaultResilienceService with bulkhead, circuit breaker, and rate limiter.
+func NewResilienceService(serviceName string, logger *zap.Logger, shouldRetry func(error) bool, callbacks *types.CircuitBreakerCallbacks) *types.DefaultResilienceService {
 	cfg, err := LoadResilienceConfig(logger)
 	if err != nil {
 		logger.Fatal("Failed to load resilience configuration", zap.Error(err))
 	}
 
-	return &DefaultResilienceService{
-		MaxRetries:  cfg.Retry.MaxRetries,
-		ShouldRetry: shouldRetry,
-		Logger:      logger,
+	// Initialize Bulkhead
+	bulkhead.Init(cfg, serviceName)
+	bulkhead.InitMetrics()
+
+	// Initialize Circuit Breaker
+	cb := circuit_breaker.NewCircuitBreaker(cfg, callbacks)
+	circuit_breaker.InitMetrics()
+
+	// Initialize Rate Limiter
+	rate_limiter.NewRateLimiter(serviceName, cfg, logger)
+	rate_limiter.InitMetrics()
+
+	return &types.DefaultResilienceService{
+		MaxRetries:     cfg.Retry.MaxRetries,
+		ShouldRetry:    shouldRetry,
+		Logger:         logger,
+		CircuitBreaker: cb,
 	}
-}
-
-func (r *DefaultResilienceService) ExecuteWithResilience(ctx context.Context, operation func() error) error {
-	errorHandler := func(err error) (interface{}, error) {
-		r.Logger.Warn("Circuit breaker fallback triggered", zap.Error(err))
-		return nil, err
-	}
-
-	_, err := ExecuteWithCircuitBreaker(ctx, r.Logger, func() (interface{}, error) {
-		return nil, ExecuteWithRetry(ctx, operation, r.MaxRetries, r.ShouldRetry)
-	}, errorHandler)
-
-	if err != nil {
-		r.Logger.Error("Failed to execute operation with resilience", zap.Error(err))
-	}
-
-	return err
 }
