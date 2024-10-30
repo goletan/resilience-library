@@ -5,8 +5,6 @@ import (
 	"context"
 
 	"github.com/goletan/config"
-	cb "github.com/goletan/resilience/circuitbreaker"
-	retry "github.com/goletan/resilience/retry"
 	"go.uber.org/zap"
 )
 
@@ -21,7 +19,7 @@ func LoadResilienceConfig(logger *zap.Logger) (*ResilienceConfig, error) {
 	return &cfg, nil
 }
 
-func NewDefaultResilienceService(logger *zap.Logger, shouldRetry func(error) bool) *DefaultResilienceService {
+func NewResilienceService(logger *zap.Logger, shouldRetry func(error) bool) *DefaultResilienceService {
 	cfg, err := LoadResilienceConfig(logger)
 	if err != nil {
 		logger.Fatal("Failed to load resilience configuration", zap.Error(err))
@@ -40,8 +38,8 @@ func (r *DefaultResilienceService) ExecuteWithResilience(ctx context.Context, op
 		return nil, err
 	}
 
-	_, err := cb.ExecuteWithCircuitBreaker(ctx, func() (interface{}, error) {
-		return nil, retry.ExecuteWithRetry(ctx, operation, r.MaxRetries, r.ShouldRetry)
+	_, err := ExecuteWithCircuitBreaker(ctx, r.Logger, func() (interface{}, error) {
+		return nil, ExecuteWithRetry(ctx, operation, r.MaxRetries, r.ShouldRetry)
 	}, errorHandler)
 
 	if err != nil {

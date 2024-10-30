@@ -1,5 +1,5 @@
 // /resilience/retry/retry.go
-package retry
+package resilience
 
 import (
 	"context"
@@ -10,8 +10,6 @@ import (
 
 	"go.uber.org/zap"
 )
-
-var logger *zap.Logger
 
 // InitRetry initializes the logger for retry operations
 func InitRetry(log *zap.Logger) {

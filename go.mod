@@ -11,6 +11,8 @@ require (
 
 replace github.com/goletan/config => ../config
 
+replace github.com/goletan/observability => ../observability
+
 require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect

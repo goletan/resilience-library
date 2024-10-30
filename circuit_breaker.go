@@ -1,5 +1,5 @@
 // /resilience/circuitbreaker/circuit_breaker.go
-package circuitbreaker
+package resilience
 
 import (
 	"context"
@@ -16,14 +16,10 @@ var (
 	logger                 *zap.Logger
 )
 
-// Init initializes the circuit breaker module.
-func Init(log *zap.Logger) {
-	logger = log
-	InitCircuitBreaker()
-}
-
 // InitCircuitBreaker initializes the circuit breaker with settings and registers state changes.
-func InitCircuitBreaker() {
+func InitCircuitBreaker(log *zap.Logger) {
+	logger = log
+
 	once.Do(func() {
 		settings := createCircuitBreakerSettings()
 		circuitBreakerInstance = gobreaker.NewCircuitBreaker(settings)
@@ -51,17 +47,19 @@ func handleStateChange(name string, from gobreaker.State, to gobreaker.State) {
 		zap.String("name", name),
 		zap.String("from", from.String()),
 		zap.String("to", to.String()))
+	RecordCircuitBreakerStateChange(name, from.String(), to.String())
 }
 
 // GetCircuitBreakerInstance ensures the circuit breaker is initialized and returns the instance.
-func GetCircuitBreakerInstance() *gobreaker.CircuitBreaker {
-	InitCircuitBreaker()
+func GetCircuitBreakerInstance(log *zap.Logger) *gobreaker.CircuitBreaker {
+	InitCircuitBreaker(log)
+
 	return circuitBreakerInstance
 }
 
 // ExecuteWithCircuitBreaker executes a function with circuit breaker protection.
-func ExecuteWithCircuitBreaker(ctx context.Context, action func() (interface{}, error), errorHandler func(error) (interface{}, error)) (interface{}, error) {
-	cb := GetCircuitBreakerInstance()
+func ExecuteWithCircuitBreaker(ctx context.Context, log *zap.Logger, action func() (interface{}, error), errorHandler func(error) (interface{}, error)) (interface{}, error) {
+	cb := GetCircuitBreakerInstance(log)
 	return cb.Execute(func() (interface{}, error) {
 		select {
 		case <-ctx.Done():

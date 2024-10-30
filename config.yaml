@@ -1,10 +1,4 @@
 # Security Config
-
-circuit_breaker:
-  failure_threshold: 5
-  success_threshold: 2
-  timeout: 10
-
 resilience:
   retry:
     max_retries: 3
@@ -13,6 +7,8 @@ resilience:
       rps: 100
       burst: 10
     circuit_breaker:
+      failure_threshold: 5
+      success_threshold: 2
       max_requests: 5
       interval: 60s
       timeout: 30s
