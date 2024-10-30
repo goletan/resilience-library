@@ -1,7 +1,16 @@
 // /resilience/types/circuit_breaker.go
 package types
 
-import "github.com/sony/gobreaker/v2"
+import (
+	"context"
+
+	"github.com/sony/gobreaker/v2"
+)
+
+// CircuitBreakerInterface defines the methods needed from the CircuitBreaker.
+type CircuitBreakerInterface interface {
+	Execute(ctx context.Context, operation func() error, fallback func() error) error
+}
 
 // CircuitBreakerCallbacks defines optional callbacks for the circuit breaker events.
 type CircuitBreakerCallbacks struct {

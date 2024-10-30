@@ -4,7 +4,6 @@ package types
 import (
 	"context"
 
-	"github.com/sony/gobreaker/v2"
 	"go.uber.org/zap"
 )
 
@@ -19,5 +18,5 @@ type DefaultResilienceService struct {
 	MaxRetries     int
 	ShouldRetry    func(error) bool
 	Logger         *zap.Logger
-	CircuitBreaker *gobreaker.CircuitBreaker[any]
+	CircuitBreaker CircuitBreakerInterface
 }

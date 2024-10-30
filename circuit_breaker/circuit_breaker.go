@@ -16,7 +16,7 @@ var (
 )
 
 type CircuitBreaker struct {
-	cb     *gobreaker.CircuitBreaker[any]
+	cb     *gobreaker.CircuitBreaker[types.CircuitBreakerInterface]
 	logger *zap.Logger
 }
 
@@ -42,7 +42,7 @@ func NewCircuitBreaker(cfg *types.ResilienceConfig, callbacks *types.CircuitBrea
 		},
 	}
 
-	cb := gobreaker.NewCircuitBreaker[any](settings)
+	cb := gobreaker.NewCircuitBreaker[types.CircuitBreakerInterface](settings)
 	return &CircuitBreaker{cb: cb, logger: logger}
 }
 
@@ -53,7 +53,7 @@ func (c *CircuitBreaker) Execute(ctx context.Context, operation func() error, fa
 	// Run the operation in a separate goroutine.
 	go func() {
 		resultCh <- func() error {
-			_, err := c.cb.Execute(func() (any, error) {
+			_, err := c.cb.Execute(func() (types.CircuitBreakerInterface, error) {
 				select {
 				case <-ctx.Done():
 					return nil, ctx.Err()
