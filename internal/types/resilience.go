@@ -3,8 +3,6 @@ package types
 
 import (
 	"context"
-
-	"go.uber.org/zap"
 )
 
 // ResilienceService defines methods for executing operations with resilience mechanisms.
@@ -13,10 +11,3 @@ type ResilienceService interface {
 }
 
 type ResilienceMetrics struct{}
-
-type DefaultResilienceService struct {
-	MaxRetries     int
-	ShouldRetry    func(error) bool
-	Logger         *zap.Logger
-	CircuitBreaker CircuitBreakerInterface
-}

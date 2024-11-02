@@ -8,7 +8,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/goletan/resilience/types"
+	"github.com/goletan/resilience/internal/types"
 	"go.uber.org/zap"
 )
 
@@ -20,6 +20,8 @@ type RetryPolicy struct {
 	ShouldRetry func(error) bool
 	Logger      *zap.Logger
 }
+
+var _ types.RetryPolicyInterface = (*RetryPolicy)(nil)
 
 // NewRetryPolicy initializes a new RetryPolicy with default values.
 func NewRetryPolicy(cfg *types.ResilienceConfig, logger *zap.Logger) *RetryPolicy {

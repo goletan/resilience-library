@@ -4,7 +4,7 @@ package circuit_breaker
 import (
 	"time"
 
-	"github.com/goletan/observability/metrics"
+	observability "github.com/goletan/observability/pkg"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -42,8 +42,8 @@ var (
 	)
 )
 
-func InitMetrics() {
-	metrics.NewManager().Register(&CircuitBreakerMetrics{})
+func InitMetrics(observer *observability.Observability) {
+	observer.Metrics.Register(&CircuitBreakerMetrics{})
 }
 
 func (cbm *CircuitBreakerMetrics) Register() error {

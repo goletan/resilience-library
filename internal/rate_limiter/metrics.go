@@ -2,7 +2,7 @@
 package rate_limiter
 
 import (
-	"github.com/goletan/observability/metrics"
+	observability "github.com/goletan/observability/pkg"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -21,8 +21,8 @@ var (
 	)
 )
 
-func InitMetrics() {
-	metrics.NewManager().Register(&RateLimiterMetrics{})
+func InitMetrics(observer *observability.Observability) {
+	observer.Metrics.Register(&RateLimiterMetrics{})
 }
 
 func (rlm *RateLimiterMetrics) Register() error {

@@ -5,7 +5,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/goletan/resilience/types"
+	"github.com/goletan/resilience/internal/types"
 	"github.com/sony/gobreaker/v2"
 	"go.uber.org/zap"
 )
@@ -20,8 +20,8 @@ type CircuitBreaker struct {
 	logger *zap.Logger
 }
 
-// NewCircuitBreaker creates a new CircuitBreaker with the provided configuration and callbacks.
-func NewCircuitBreaker(cfg *types.ResilienceConfig, callbacks *types.CircuitBreakerCallbacks) *CircuitBreaker {
+// Modify NewCircuitBreaker to take a logger argument
+func NewCircuitBreaker(cfg *types.ResilienceConfig, callbacks *types.CircuitBreakerCallbacks, logger *zap.Logger) *CircuitBreaker {
 	settings := gobreaker.Settings{
 		Name:        "GoletanCircuitBreaker",
 		MaxRequests: uint32(cfg.CircuitBreaker.MaxRequest),
@@ -35,7 +35,6 @@ func NewCircuitBreaker(cfg *types.ResilienceConfig, callbacks *types.CircuitBrea
 			logger.Info("Circuit breaker state changed", zap.String("name", name), zap.String("from", from.String()), zap.String("to", to.String()))
 			RecordCircuitBreakerStateChange(name, from.String(), to.String())
 
-			// Execute the user-provided callback for state changes, if defined.
 			if callbacks != nil && callbacks.OnStateChange != nil {
 				callbacks.OnStateChange(name, from, to)
 			}
@@ -44,6 +43,12 @@ func NewCircuitBreaker(cfg *types.ResilienceConfig, callbacks *types.CircuitBrea
 
 	cb := gobreaker.NewCircuitBreaker[types.CircuitBreakerInterface](settings)
 	return &CircuitBreaker{cb: cb, logger: logger}
+}
+
+func (c *CircuitBreaker) Shutdown(ctx context.Context) error {
+	// Here, you could reset states, stop monitoring, or clean up resources.
+	c.logger.Info("Shutting down circuit breaker")
+	return nil
 }
 
 // Execute runs the provided operation and handles fallback if the circuit breaker is open.

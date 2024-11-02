@@ -1,9 +1,9 @@
-// /resilience/config.go
-package resilience
+// /resilience/internal/config/config.go
+package config
 
 import (
 	"github.com/goletan/config"
-	"github.com/goletan/resilience/types"
+	"github.com/goletan/resilience/internal/types"
 	"go.uber.org/zap"
 )
 

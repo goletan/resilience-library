@@ -1,8 +1,8 @@
-// /resilience/bulkhead/metrics.go
+// /resilience/internal/bulkhead/metrics.go
 package bulkhead
 
 import (
-	"github.com/goletan/observability/metrics"
+	observability "github.com/goletan/observability/pkg"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -20,8 +20,8 @@ var (
 	)
 )
 
-func InitMetrics() {
-	metrics.NewManager().Register(&BulkheadMetrics{})
+func InitMetrics(observer *observability.Observability) {
+	observer.Metrics.Register(&BulkheadMetrics{})
 }
 
 func (bm *BulkheadMetrics) Register() error {

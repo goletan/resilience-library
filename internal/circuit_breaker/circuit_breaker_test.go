@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/goletan/resilience/types"
+	"github.com/goletan/resilience/internal/types"
 )
 
 func TestCircuitBreaker_Execute_Success(t *testing.T) {

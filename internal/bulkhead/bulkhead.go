@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/goletan/resilience/types"
+	"github.com/goletan/resilience/internal/types"
 	"go.uber.org/zap"
 )
 
