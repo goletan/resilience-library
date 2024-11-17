@@ -1,6 +1,6 @@
 module github.com/goletan/resilience
 
-go 1.23.1
+go 1.23
 
 require (
 	github.com/goletan/config v1.0.0

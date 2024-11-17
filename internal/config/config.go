@@ -2,7 +2,7 @@
 package config
 
 import (
-	"github.com/goletan/config"
+	config "github.com/goletan/config/pkg"
 	"github.com/goletan/resilience/internal/types"
 	"go.uber.org/zap"
 )
