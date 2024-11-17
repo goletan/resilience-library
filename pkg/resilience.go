@@ -1,3 +1,4 @@
+// /resilience/pkg/resilience.go
 package resilience
 
 import (
@@ -18,35 +19,37 @@ type DefaultResilienceService struct {
 	MaxRetries     int
 	ShouldRetry    func(error) bool
 	Logger         *zap.Logger
-	CircuitBreaker types.CircuitBreakerInterface
-	RetryPolicy    types.RetryPolicyInterface
+	CircuitBreaker *circuit_breaker.CircuitBreaker
+	RetryPolicy    *retry.RetryPolicy
 }
 
-// NewResilienceService initializes a new DefaultResilienceService with bulkhead, circuit breaker, and rate limiter.
-func NewResilienceService(serviceName string, logger *zap.Logger, shouldRetry func(error) bool, callbacks *types.CircuitBreakerCallbacks) *DefaultResilienceService {
-	cfg, err := config.LoadResilienceConfig(logger)
+func NewResilienceService(serviceName string, obs *observability.Observability, shouldRetry func(error) bool, callbacks *CircuitBreakerCallbacks) *DefaultResilienceService {
+	cfg, err := config.LoadResilienceConfig(obs.Logger)
 	if err != nil {
-		logger.Fatal("Failed to load resilience configuration", zap.Error(err))
-	}
-
-	observer, err := observability.NewObserver()
-	if err != nil {
-		logger.Error("Failed to initialize observability", zap.Error(err))
-		return nil
+		obs.Logger.Fatal("Failed to load resilience configuration", zap.Error(err))
 	}
 
 	bulkhead.Init(cfg, serviceName)
-	metrics.InitMetrics(observer)
+	metrics.InitMetrics(obs)
 
-	cb := circuit_breaker.NewCircuitBreaker(cfg, callbacks, logger)
-	rate_limiter.NewRateLimiter(cfg, serviceName, observer)
+	// Convert public callbacks to internal ones
+	internalCallbacks := &types.CircuitBreakerCallbacks{
+		OnOpen:        callbacks.OnOpen,
+		OnClose:       callbacks.OnClose,
+		OnStateChange: callbacks.OnStateChange,
+		OnSuccess:     callbacks.OnSuccess,
+		OnFailure:     callbacks.OnFailure,
+	}
 
-	retryPolicy := retry.NewRetryPolicy(cfg, logger)
+	cb := circuit_breaker.NewCircuitBreaker(cfg, internalCallbacks, obs.Logger)
+	rate_limiter.NewRateLimiter(cfg, serviceName, obs)
+
+	retryPolicy := retry.NewRetryPolicy(cfg, obs.Logger)
 
 	return &DefaultResilienceService{
 		MaxRetries:     cfg.Retry.MaxRetries,
 		ShouldRetry:    shouldRetry,
-		Logger:         logger,
+		Logger:         obs.Logger,
 		CircuitBreaker: cb,
 		RetryPolicy:    retryPolicy,
 	}
