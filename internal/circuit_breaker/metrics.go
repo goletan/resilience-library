@@ -37,6 +37,7 @@ var (
 			Subsystem: "resilience",
 			Name:      "circuit_breaker_state_duration_seconds",
 			Help:      "Tracks the duration of time spent in each circuit breaker state.",
+			Buckets:   prometheus.DefBuckets,
 		},
 		[]string{"circuit", "state"},
 	)

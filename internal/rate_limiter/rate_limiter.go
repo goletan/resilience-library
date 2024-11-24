@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	observability "github.com/goletan/observability/pkg"
 	"github.com/goletan/resilience/internal/types"
@@ -16,6 +17,7 @@ import (
 type RateLimiter struct {
 	limiter *rate.Limiter
 	logger  *zap.Logger
+	obs     *observability.Observability
 }
 
 // rateLimiterRegistry stores multiple rate limiters for different serviceNames.
@@ -33,6 +35,7 @@ func NewRateLimiter(cfg *types.ResilienceConfig, serviceName string, observer *o
 	rateLimiterRegistry[serviceName] = &RateLimiter{
 		limiter: rate.NewLimiter(rate.Limit(cfg.RateLimiter.RPS), cfg.RateLimiter.Burst),
 		logger:  observer.Logger,
+		obs:     observer,
 	}
 
 	observer.Logger.Info("Rate limiter initialized", zap.String("serviceName", serviceName), zap.Int("rps", cfg.RateLimiter.RPS), zap.Int("burst", cfg.RateLimiter.Burst))
@@ -47,7 +50,7 @@ func GetRateLimiter(serviceName string) (*RateLimiter, bool) {
 	return rl, exists
 }
 
-// ExecuteWithRateLimiting executes the provided serviceName if the rate limit allows it.
+// ExecuteWithRateLimiting executes the provided function if the rate limit allows it.
 func ExecuteWithRateLimiting(ctx context.Context, serviceName string, fn func() error) error {
 	// Get the rate limiter for the serviceName
 	rl, exists := GetRateLimiter(serviceName)
@@ -62,6 +65,10 @@ func ExecuteWithRateLimiting(ctx context.Context, serviceName string, fn func() 
 		return err
 	}
 
-	// Execute the serviceName
-	return fn()
+	// Execute the function and measure latency
+	start := time.Now()
+	err := fn()
+	TrackRateLimitLatency(serviceName, time.Since(start))
+
+	return err
 }
