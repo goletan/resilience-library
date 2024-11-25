@@ -17,10 +17,19 @@ type CircuitBreaker struct {
 	metrics     *CircuitBreakerMetrics
 	lastState   gobreaker.State
 	stateChange time.Time
+	callbacks   *types.CircuitBreakerCallbacks
 }
 
 // NewCircuitBreaker constructs a new CircuitBreaker instance.
 func NewCircuitBreaker(cfg *types.ResilienceConfig, callbacks *types.CircuitBreakerCallbacks, obs *observability.Observability) *CircuitBreaker {
+	cb := &CircuitBreaker{
+		logger:      obs.Logger,
+		metrics:     &CircuitBreakerMetrics{},
+		lastState:   gobreaker.StateClosed, // Assuming we start with a closed state
+		stateChange: time.Now(),
+		callbacks:   callbacks,
+	}
+
 	settings := gobreaker.Settings{
 		Name:        "GoletanCircuitBreaker",
 		MaxRequests: cfg.CircuitBreaker.MaxRequests,
@@ -30,35 +39,12 @@ func NewCircuitBreaker(cfg *types.ResilienceConfig, callbacks *types.CircuitBrea
 			failureRate := float64(counts.TotalFailures) / float64(counts.Requests)
 			return counts.ConsecutiveFailures > uint32(cfg.CircuitBreaker.ConsecutiveFailures) || failureRate > cfg.CircuitBreaker.FailureRateThreshold
 		},
-		OnStateChange: func(name string, from, to gobreaker.State) {
-			cb.logger.Info("Circuit breaker state changed", zap.String("name", name), zap.String("from", from.String()), zap.String("to", to.String()))
-			RecordCircuitBreakerStateChange(name, from.String(), to.String())
-
-			// Track duration in the previous state using the `stateChange` field from `CircuitBreaker` struct
-			if from != to {
-				duration := time.Since(cb.stateChange)
-				RecordStateDuration(name, from.String(), duration)
-			}
-
-			// Update the `stateChange` time for the new state
-			cb.stateChange = time.Now()
-
-			if callbacks != nil && callbacks.OnStateChange != nil {
-				callbacks.OnStateChange(name, from, to)
-			}
-		},
+		OnStateChange: cb.handleStateChange,
 	}
 
-	cb := gobreaker.NewCircuitBreaker[types.CircuitBreakerInterface](settings)
+	cb.cb = gobreaker.NewCircuitBreaker[types.CircuitBreakerInterface](settings)
 
-	// Initialize the CircuitBreaker with the current time
-	return &CircuitBreaker{
-		cb:          cb,
-		logger:      obs.Logger,
-		metrics:     &CircuitBreakerMetrics{},
-		lastState:   gobreaker.StateClosed, // Assuming we start with a closed state
-		stateChange: time.Now(),
-	}
+	return cb
 }
 
 // Execute runs the provided operation and handles fallback if the circuit breaker is open.
@@ -98,4 +84,23 @@ func (c *CircuitBreaker) Execute(ctx context.Context, operation func() error, fa
 func (c *CircuitBreaker) Shutdown(ctx context.Context) error {
 	c.logger.Info("Shutting down circuit breaker")
 	return nil
+}
+
+// handleStateChange is a private function to handle state changes for the circuit breaker.
+func (c *CircuitBreaker) handleStateChange(name string, from, to gobreaker.State) {
+	c.logger.Info("Circuit breaker state changed", zap.String("name", name), zap.String("from", from.String()), zap.String("to", to.String()))
+	RecordCircuitBreakerStateChange(name, from.String(), to.String())
+
+	// Track duration in the previous state using the stateChange field from the struct
+	if from != to {
+		duration := time.Since(c.stateChange)
+		RecordStateDuration(name, from.String(), duration)
+	}
+
+	// Update the stateChange time for the new state
+	c.stateChange = time.Now()
+
+	if c.callbacks != nil && c.callbacks.OnStateChange != nil {
+		c.callbacks.OnStateChange(name, from, to)
+	}
 }

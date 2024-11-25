@@ -15,9 +15,9 @@ type CircuitBreakerInterface interface {
 
 // CircuitBreakerCallbacks defines optional callbacks for the circuit breaker events.
 type CircuitBreakerCallbacks struct {
-	OnOpen        func()
-	OnClose       func()
+	OnOpen        func(name string, from, to gobreaker.State)
+	OnClose       func(name string, from, to gobreaker.State)
 	OnStateChange func(name string, from, to gobreaker.State)
-	OnSuccess     func()
-	OnFailure     func()
+	OnSuccess     func(name string)
+	OnFailure     func(name string, err error)
 }
