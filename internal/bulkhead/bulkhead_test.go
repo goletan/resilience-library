@@ -1,4 +1,3 @@
-// /bulkhead/bulkhead_test.go
 package bulkhead
 
 import (

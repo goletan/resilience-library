@@ -1,8 +1,8 @@
-// /resilience/retry/retry.go
 package retry
 
 import (
 	"context"
+	observability "github.com/goletan/observability/pkg"
 	"math/rand"
 	"time"
 
@@ -17,68 +17,96 @@ type RetryPolicy struct {
 	MaxBackoff     time.Duration
 	BackoffFactor  float64
 	ShouldRetry    func(error) bool
-	Logger         *zap.Logger
+	Observability  *observability.Observability
 }
 
 var _ types.RetryPolicyInterface = (*RetryPolicy)(nil)
 
+const (
+	operationName       = "operation_name"
+	successStatus       = "success"
+	failureStatus       = "failure"
+	exceededRetriesMsg  = "Retry attempts exceeded"
+	operationFailedMsg  = "Operation failed, retrying..."
+	nonRetryableErrMsg  = "Non-retryable error occurred"
+	retryWithBackoffMsg = "Retry attempt with backoff"
+)
+
 // NewRetryPolicy initializes a new RetryPolicy based on the configuration.
-func NewRetryPolicy(cfg *types.ResilienceConfig, logger *zap.Logger) *RetryPolicy {
+func NewRetryPolicy(cfg *types.ResilienceConfig, obs *observability.Observability) *RetryPolicy {
 	return &RetryPolicy{
 		MaxRetries:     cfg.Retry.MaxRetries,
 		InitialBackoff: cfg.Retry.InitialBackoff,
 		MaxBackoff:     cfg.Retry.MaxBackoff,
 		BackoffFactor:  cfg.Retry.BackoffFactor,
 		ShouldRetry:    func(err error) bool { return true }, // Default retry policy
-		Logger:         logger,
+		Observability:  obs,
 	}
 }
 
-// ExecuteWithRetry retries a function with exponential backoff and jitter.
 func (rp *RetryPolicy) ExecuteWithRetry(ctx context.Context, operation func() error) error {
-	backoff := rp.InitialBackoff
+	currentBackoff := rp.InitialBackoff
 
 	for attempt := 0; attempt < rp.MaxRetries; attempt++ {
-		start := time.Now()
-		err := operation()
-		if err == nil {
-			// Operation succeeded
-			CountRetryAttempt("operation_name", "success") // Update success metric
-			TrackRetryLatency("operation_name", time.Since(start))
+		if err := rp.tryOperation(ctx, operation, &currentBackoff, attempt); err == nil {
 			return nil
 		}
-
-		// Log retry attempt
-		rp.Logger.Warn("Operation failed, retrying...", zap.Error(err), zap.Int("attempt", attempt+1))
-
-		// Check if the error is retryable based on custom logic
-		if !rp.ShouldRetry(err) {
-			rp.Logger.Warn("Non-retryable error occurred", zap.Error(err))
-			CountRetryAttempt("operation_name", "failure") // Update failure metric
-			return err
-		}
-
-		// Calculate exponential backoff with jitter
-		waitTime := rp.calculateBackoffWithJitter(backoff)
-		rp.Logger.Warn("Retry attempt with backoff", zap.Int("attempt", attempt+1), zap.Duration("wait_time", waitTime))
-
-		// Dynamic retry delay using context
-		retryCtx, cancel := context.WithTimeout(ctx, waitTime)
-		defer cancel()
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-retryCtx.Done():
-			// Continue to next retry after backoff
-		}
-
-		// Ensure the backoff does not exceed maxBackoff
-		backoff = min(backoff*time.Duration(rp.BackoffFactor), rp.MaxBackoff)
 	}
 
-	CountRetryAttempt("operation_name", "exceeded") // Update metric for retries exhausted
+	CountRetryAttempt(operationName, exceededRetriesMsg)
 	return ctx.Err()
+}
+
+func (rp *RetryPolicy) tryOperation(ctx context.Context, operation func() error, currentBackoff *time.Duration, attempt int) error {
+	start := time.Now()
+	err := operation()
+	if err == nil {
+		CountRetryAttempt(operationName, successStatus)
+		TrackRetryLatency(operationName, time.Since(start))
+		return nil
+	}
+
+	rp.logRetryAttempt(err, attempt)
+
+	if !rp.ShouldRetry(err) {
+		rp.logFailure(err)
+		return err
+	}
+
+	waitTime := rp.calculateBackoffWithJitter(*currentBackoff)
+	rp.logBackoff(attempt, waitTime)
+
+	if err := rp.handleRetry(ctx, waitTime); err != nil {
+		return err
+	}
+
+	*currentBackoff = duration(*currentBackoff*time.Duration(rp.BackoffFactor), rp.MaxBackoff)
+	return nil
+}
+
+func (rp *RetryPolicy) logRetryAttempt(err error, attempt int) {
+	rp.Observability.Logger.Warn(operationFailedMsg, zap.Error(err), zap.Int("attempt", attempt+1))
+}
+
+func (rp *RetryPolicy) logFailure(err error) {
+	rp.Observability.Logger.Warn(nonRetryableErrMsg, zap.Error(err))
+	CountRetryAttempt(operationName, failureStatus)
+}
+
+func (rp *RetryPolicy) logBackoff(attempt int, waitTime time.Duration) {
+	rp.Observability.Logger.Warn(retryWithBackoffMsg, zap.Int("attempt", attempt+1), zap.Duration("wait_time", waitTime))
+}
+
+func (rp *RetryPolicy) handleRetry(ctx context.Context, waitTime time.Duration) error {
+	retryCtx, cancel := context.WithTimeout(ctx, waitTime)
+	defer cancel()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-retryCtx.Done():
+		return nil
+	}
 }
 
 // calculateBackoffWithJitter returns a randomized backoff duration using jitter.
@@ -87,8 +115,8 @@ func (rp *RetryPolicy) calculateBackoffWithJitter(baseBackoff time.Duration) tim
 	return baseBackoff + jitter
 }
 
-// min returns the smaller of two time durations.
-func min(a, b time.Duration) time.Duration {
+// duration returns the smaller of two time durations.
+func duration(a, b time.Duration) time.Duration {
 	if a < b {
 		return a
 	}

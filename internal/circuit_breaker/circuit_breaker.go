@@ -1,8 +1,8 @@
-// /resilience/circuit_breaker/circuit_breaker.go
 package circuit_breaker
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	observability "github.com/goletan/observability/pkg"
@@ -13,7 +13,7 @@ import (
 
 type CircuitBreaker struct {
 	cb          *gobreaker.CircuitBreaker[types.CircuitBreakerInterface]
-	logger      *zap.Logger
+	obs         *observability.Observability
 	metrics     *CircuitBreakerMetrics
 	lastState   gobreaker.State
 	stateChange time.Time
@@ -23,7 +23,7 @@ type CircuitBreaker struct {
 // NewCircuitBreaker constructs a new CircuitBreaker instance.
 func NewCircuitBreaker(cfg *types.ResilienceConfig, callbacks *types.CircuitBreakerCallbacks, obs *observability.Observability) *CircuitBreaker {
 	cb := &CircuitBreaker{
-		logger:      obs.Logger,
+		obs:         obs,
 		metrics:     &CircuitBreakerMetrics{},
 		lastState:   gobreaker.StateClosed, // Assuming we start with a closed state
 		stateChange: time.Now(),
@@ -63,8 +63,8 @@ func (c *CircuitBreaker) Execute(ctx context.Context, operation func() error, fa
 			})
 
 			// If the circuit breaker is open and a fallback is provided, execute the fallback.
-			if err == gobreaker.ErrOpenState && fallback != nil {
-				c.logger.Warn("Circuit breaker open, executing fallback")
+			if errors.Is(err, gobreaker.ErrOpenState) && fallback != nil {
+				c.obs.Logger.Warn("Circuit breaker open, executing fallback")
 				return fallback()
 			}
 
@@ -82,13 +82,13 @@ func (c *CircuitBreaker) Execute(ctx context.Context, operation func() error, fa
 
 // Shutdown gracefully shuts down the circuit breaker and releases any resources.
 func (c *CircuitBreaker) Shutdown(ctx context.Context) error {
-	c.logger.Info("Shutting down circuit breaker")
+	c.obs.Logger.Info("Shutting down circuit breaker")
 	return nil
 }
 
 // handleStateChange is a private function to handle state changes for the circuit breaker.
 func (c *CircuitBreaker) handleStateChange(name string, from, to gobreaker.State) {
-	c.logger.Info("Circuit breaker state changed", zap.String("name", name), zap.String("from", from.String()), zap.String("to", to.String()))
+	c.obs.Logger.Info("Circuit breaker state changed", zap.String("name", name), zap.String("from", from.String()), zap.String("to", to.String()))
 	RecordCircuitBreakerStateChange(name, from.String(), to.String())
 
 	// Track duration in the previous state using the stateChange field from the struct

@@ -1,4 +1,3 @@
-// /resilience/bulkhead/bulkhead.go
 package bulkhead
 
 import (

@@ -1,4 +1,3 @@
-// /resilience/rate_limiter/metrics.go
 package rate_limiter
 
 import (

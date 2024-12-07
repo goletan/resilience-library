@@ -1,5 +1,4 @@
-// /resilience/types/circuit_breaker.go
-package types
+package resilience
 
 import (
 	"context"

@@ -1,4 +1,3 @@
-// /resilience/internal/bulkhead/metrics.go
 package bulkhead
 
 import (

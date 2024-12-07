@@ -1,4 +1,3 @@
-// /resilience/types/metrics.go
 package types
 
 // Metrics is a common interface to register metrics in Prometheus.

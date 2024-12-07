@@ -1,30 +1,29 @@
-// /resilience/pkg/resilience.go
 package resilience
 
 import (
 	"context"
+	res "github.com/goletan/resilience/shared/types"
 
-	observability "github.com/goletan/observability/pkg"
+	"github.com/goletan/observability/pkg"
 	"github.com/goletan/resilience/internal/bulkhead"
 	"github.com/goletan/resilience/internal/circuit_breaker"
 	"github.com/goletan/resilience/internal/config"
 	"github.com/goletan/resilience/internal/metrics"
 	"github.com/goletan/resilience/internal/rate_limiter"
 	"github.com/goletan/resilience/internal/retry"
-	"github.com/goletan/resilience/internal/types"
 	"go.uber.org/zap"
 )
 
 type DefaultResilienceService struct {
 	MaxRetries     int
 	ShouldRetry    func(error) bool
-	Logger         *zap.Logger
+	Observability  *observability.Observability
 	CircuitBreaker *circuit_breaker.CircuitBreaker
 	RetryPolicy    *retry.RetryPolicy
 }
 
-func NewResilienceService(serviceName string, obs *observability.Observability, shouldRetry func(error) bool, callbacks *CircuitBreakerCallbacks) *DefaultResilienceService {
-	cfg, err := config.LoadResilienceConfig(obs.Logger)
+func NewResilienceService(serviceName string, obs *observability.Observability, shouldRetry func(error) bool, callbacks *res.CircuitBreakerCallbacks) *DefaultResilienceService {
+	cfg, err := config.LoadResilienceConfig(obs)
 	if err != nil {
 		obs.Logger.Fatal("Failed to load resilience configuration", zap.Error(err))
 	}
@@ -33,7 +32,7 @@ func NewResilienceService(serviceName string, obs *observability.Observability, 
 	metrics.InitMetrics(obs)
 
 	// Convert public callbacks to internal ones
-	internalCallbacks := &types.CircuitBreakerCallbacks{
+	internalCallbacks := &res.CircuitBreakerCallbacks{
 		OnOpen:        callbacks.OnOpen,
 		OnClose:       callbacks.OnClose,
 		OnStateChange: callbacks.OnStateChange,
@@ -41,15 +40,15 @@ func NewResilienceService(serviceName string, obs *observability.Observability, 
 		OnFailure:     callbacks.OnFailure,
 	}
 
-	cb := circuit_breaker.NewCircuitBreaker(cfg, internalCallbacks, obs.Logger)
+	cb := circuit_breaker.NewCircuitBreaker(cfg, internalCallbacks, obs)
 	rate_limiter.NewRateLimiter(cfg, serviceName, obs)
 
-	retryPolicy := retry.NewRetryPolicy(cfg, obs.Logger)
+	retryPolicy := retry.NewRetryPolicy(cfg, obs)
 
 	return &DefaultResilienceService{
 		MaxRetries:     cfg.Retry.MaxRetries,
 		ShouldRetry:    shouldRetry,
-		Logger:         obs.Logger,
+		Observability:  obs,
 		CircuitBreaker: cb,
 		RetryPolicy:    retryPolicy,
 	}
@@ -62,14 +61,14 @@ func (r *DefaultResilienceService) ExecuteWithRetry(ctx context.Context, operati
 
 // Shutdown gracefully shuts down the resilience service, releasing any resources held by components.
 func (r *DefaultResilienceService) Shutdown(ctx context.Context) error {
-	r.Logger.Info("Shutting down resilience service")
+	r.Observability.Logger.Info("Shutting down resilience service")
 
 	// Add shutdown logic here for each resilience component if necessary.
 	if err := r.CircuitBreaker.Shutdown(ctx); err != nil {
-		r.Logger.Error("Failed to shutdown circuit breaker", zap.Error(err))
+		r.Observability.Logger.Error("Failed to shutdown circuit breaker", zap.Error(err))
 		return err
 	}
 
-	r.Logger.Info("Resilience service shut down successfully")
+	r.Observability.Logger.Info("Resilience service shut down successfully")
 	return nil
 }

@@ -1,4 +1,3 @@
-// /resilience/internal/metrics/init_metrics.go
 package metrics
 
 import (

@@ -1,4 +1,3 @@
-// /resilience/types/config.go
 package types
 
 import "time"

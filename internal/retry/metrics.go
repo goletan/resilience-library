@@ -1,4 +1,3 @@
-// /resilience/retry/metrics.go
 package retry
 
 import (

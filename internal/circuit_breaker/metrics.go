@@ -1,4 +1,3 @@
-// /resilience/circuit_breaker/metrics.go
 package circuit_breaker
 
 import (

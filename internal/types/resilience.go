@@ -1,4 +1,3 @@
-// /resilience/types/resilience.go
 package types
 
 import (

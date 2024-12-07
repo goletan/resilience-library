@@ -16,7 +16,6 @@ import (
 // RateLimiter defines a rate limiter with specific settings.
 type RateLimiter struct {
 	limiter *rate.Limiter
-	logger  *zap.Logger
 	obs     *observability.Observability
 }
 
@@ -27,18 +26,17 @@ var (
 )
 
 // NewRateLimiter initializes a new rate limiter for a given serviceName and configuration.
-func NewRateLimiter(cfg *types.ResilienceConfig, serviceName string, observer *observability.Observability) {
+func NewRateLimiter(cfg *types.ResilienceConfig, serviceName string, obs *observability.Observability) {
 	mu.Lock()
 	defer mu.Unlock()
 
 	// Initialize a new rate limiter for the given serviceName
 	rateLimiterRegistry[serviceName] = &RateLimiter{
 		limiter: rate.NewLimiter(rate.Limit(cfg.RateLimiter.RPS), cfg.RateLimiter.Burst),
-		logger:  observer.Logger,
-		obs:     observer,
+		obs:     obs,
 	}
 
-	observer.Logger.Info("Rate limiter initialized", zap.String("serviceName", serviceName), zap.Int("rps", cfg.RateLimiter.RPS), zap.Int("burst", cfg.RateLimiter.Burst))
+	obs.Logger.Info("Rate limiter initialized", zap.String("serviceName", serviceName), zap.Int("rps", cfg.RateLimiter.RPS), zap.Int("burst", cfg.RateLimiter.Burst))
 }
 
 // GetRateLimiter retrieves a rate limiter for the given serviceName.
@@ -60,7 +58,7 @@ func ExecuteWithRateLimiting(ctx context.Context, serviceName string, fn func() 
 
 	// Wait for permission to proceed
 	if err := rl.limiter.Wait(ctx); err != nil {
-		rl.logger.Warn("Rate limit exceeded", zap.String("serviceName", serviceName), zap.Error(err))
+		rl.obs.Logger.Warn("Rate limit exceeded", zap.String("serviceName", serviceName), zap.Error(err))
 		CountRateLimit(serviceName) // Update metric for rate limit reached
 		return err
 	}
