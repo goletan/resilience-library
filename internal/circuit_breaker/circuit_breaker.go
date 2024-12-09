@@ -3,27 +3,28 @@ package circuit_breaker
 import (
 	"context"
 	"errors"
+	"github.com/goletan/observability/shared/logger"
 	"time"
 
-	observability "github.com/goletan/observability/pkg"
 	"github.com/goletan/resilience/internal/types"
+	sharedTypes "github.com/goletan/resilience/shared/types"
 	"github.com/sony/gobreaker/v2"
 	"go.uber.org/zap"
 )
 
 type CircuitBreaker struct {
-	cb          *gobreaker.CircuitBreaker[types.CircuitBreakerInterface]
-	obs         *observability.Observability
+	cb          *gobreaker.CircuitBreaker[sharedTypes.CircuitBreakerInterface]
+	logger      *logger.ZapLogger
 	metrics     *CircuitBreakerMetrics
 	lastState   gobreaker.State
 	stateChange time.Time
-	callbacks   *types.CircuitBreakerCallbacks
+	callbacks   *sharedTypes.CircuitBreakerCallbacks
 }
 
 // NewCircuitBreaker constructs a new CircuitBreaker instance.
-func NewCircuitBreaker(cfg *types.ResilienceConfig, callbacks *types.CircuitBreakerCallbacks, obs *observability.Observability) *CircuitBreaker {
+func NewCircuitBreaker(cfg *types.ResilienceConfig, callbacks *sharedTypes.CircuitBreakerCallbacks, log *logger.ZapLogger) *CircuitBreaker {
 	cb := &CircuitBreaker{
-		obs:         obs,
+		logger:      log,
 		metrics:     &CircuitBreakerMetrics{},
 		lastState:   gobreaker.StateClosed, // Assuming we start with a closed state
 		stateChange: time.Now(),
@@ -42,7 +43,7 @@ func NewCircuitBreaker(cfg *types.ResilienceConfig, callbacks *types.CircuitBrea
 		OnStateChange: cb.handleStateChange,
 	}
 
-	cb.cb = gobreaker.NewCircuitBreaker[types.CircuitBreakerInterface](settings)
+	cb.cb = gobreaker.NewCircuitBreaker[sharedTypes.CircuitBreakerInterface](settings)
 
 	return cb
 }
@@ -53,7 +54,7 @@ func (c *CircuitBreaker) Execute(ctx context.Context, operation func() error, fa
 
 	go func() {
 		resultCh <- func() error {
-			_, err := c.cb.Execute(func() (types.CircuitBreakerInterface, error) {
+			_, err := c.cb.Execute(func() (sharedTypes.CircuitBreakerInterface, error) {
 				select {
 				case <-ctx.Done():
 					return nil, ctx.Err()
@@ -64,7 +65,7 @@ func (c *CircuitBreaker) Execute(ctx context.Context, operation func() error, fa
 
 			// If the circuit breaker is open and a fallback is provided, execute the fallback.
 			if errors.Is(err, gobreaker.ErrOpenState) && fallback != nil {
-				c.obs.Logger.Warn("Circuit breaker open, executing fallback")
+				c.logger.Warn("Circuit breaker open, executing fallback")
 				return fallback()
 			}
 
@@ -82,13 +83,13 @@ func (c *CircuitBreaker) Execute(ctx context.Context, operation func() error, fa
 
 // Shutdown gracefully shuts down the circuit breaker and releases any resources.
 func (c *CircuitBreaker) Shutdown(ctx context.Context) error {
-	c.obs.Logger.Info("Shutting down circuit breaker")
+	c.logger.Info("Shutting down circuit breaker")
 	return nil
 }
 
 // handleStateChange is a private function to handle state changes for the circuit breaker.
 func (c *CircuitBreaker) handleStateChange(name string, from, to gobreaker.State) {
-	c.obs.Logger.Info("Circuit breaker state changed", zap.String("name", name), zap.String("from", from.String()), zap.String("to", to.String()))
+	c.logger.Info("Circuit breaker state changed", zap.String("name", name), zap.String("from", from.String()), zap.String("to", to.String()))
 	RecordCircuitBreakerStateChange(name, from.String(), to.String())
 
 	// Track duration in the previous state using the stateChange field from the struct

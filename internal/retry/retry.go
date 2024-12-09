@@ -2,10 +2,10 @@ package retry
 
 import (
 	"context"
-	observability "github.com/goletan/observability/pkg"
 	"math/rand"
 	"time"
 
+	"github.com/goletan/observability/shared/logger"
 	"github.com/goletan/resilience/internal/types"
 	"go.uber.org/zap"
 )
@@ -17,7 +17,7 @@ type RetryPolicy struct {
 	MaxBackoff     time.Duration
 	BackoffFactor  float64
 	ShouldRetry    func(error) bool
-	Observability  *observability.Observability
+	Logger         *logger.ZapLogger
 }
 
 var _ types.RetryPolicyInterface = (*RetryPolicy)(nil)
@@ -33,14 +33,14 @@ const (
 )
 
 // NewRetryPolicy initializes a new RetryPolicy based on the configuration.
-func NewRetryPolicy(cfg *types.ResilienceConfig, obs *observability.Observability) *RetryPolicy {
+func NewRetryPolicy(cfg *types.ResilienceConfig, log *logger.ZapLogger) *RetryPolicy {
 	return &RetryPolicy{
 		MaxRetries:     cfg.Retry.MaxRetries,
 		InitialBackoff: cfg.Retry.InitialBackoff,
 		MaxBackoff:     cfg.Retry.MaxBackoff,
 		BackoffFactor:  cfg.Retry.BackoffFactor,
 		ShouldRetry:    func(err error) bool { return true }, // Default retry policy
-		Observability:  obs,
+		Logger:         log,
 	}
 }
 
@@ -85,16 +85,16 @@ func (rp *RetryPolicy) tryOperation(ctx context.Context, operation func() error,
 }
 
 func (rp *RetryPolicy) logRetryAttempt(err error, attempt int) {
-	rp.Observability.Logger.Warn(operationFailedMsg, zap.Error(err), zap.Int("attempt", attempt+1))
+	rp.Logger.Warn(operationFailedMsg, zap.Error(err), zap.Int("attempt", attempt+1))
 }
 
 func (rp *RetryPolicy) logFailure(err error) {
-	rp.Observability.Logger.Warn(nonRetryableErrMsg, zap.Error(err))
+	rp.Logger.Warn(nonRetryableErrMsg, zap.Error(err))
 	CountRetryAttempt(operationName, failureStatus)
 }
 
 func (rp *RetryPolicy) logBackoff(attempt int, waitTime time.Duration) {
-	rp.Observability.Logger.Warn(retryWithBackoffMsg, zap.Int("attempt", attempt+1), zap.Duration("wait_time", waitTime))
+	rp.Logger.Warn(retryWithBackoffMsg, zap.Int("attempt", attempt+1), zap.Duration("wait_time", waitTime))
 }
 
 func (rp *RetryPolicy) handleRetry(ctx context.Context, waitTime time.Duration) error {

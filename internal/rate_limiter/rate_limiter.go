@@ -1,13 +1,12 @@
-// /resilience/rate_limiter/rate_limiter.go
 package rate_limiter
 
 import (
 	"context"
 	"fmt"
+	"github.com/goletan/observability/shared/logger"
 	"sync"
 	"time"
 
-	observability "github.com/goletan/observability/pkg"
 	"github.com/goletan/resilience/internal/types"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
@@ -16,7 +15,7 @@ import (
 // RateLimiter defines a rate limiter with specific settings.
 type RateLimiter struct {
 	limiter *rate.Limiter
-	obs     *observability.Observability
+	logger  *logger.ZapLogger
 }
 
 // rateLimiterRegistry stores multiple rate limiters for different serviceNames.
@@ -26,17 +25,22 @@ var (
 )
 
 // NewRateLimiter initializes a new rate limiter for a given serviceName and configuration.
-func NewRateLimiter(cfg *types.ResilienceConfig, serviceName string, obs *observability.Observability) {
+func NewRateLimiter(cfg *types.ResilienceConfig, serviceName string, log *logger.ZapLogger) {
 	mu.Lock()
 	defer mu.Unlock()
 
 	// Initialize a new rate limiter for the given serviceName
 	rateLimiterRegistry[serviceName] = &RateLimiter{
 		limiter: rate.NewLimiter(rate.Limit(cfg.RateLimiter.RPS), cfg.RateLimiter.Burst),
-		obs:     obs,
+		logger:  log,
 	}
 
-	obs.Logger.Info("Rate limiter initialized", zap.String("serviceName", serviceName), zap.Int("rps", cfg.RateLimiter.RPS), zap.Int("burst", cfg.RateLimiter.Burst))
+	log.Info(
+		"Rate limiter initialized",
+		zap.String("serviceName", serviceName),
+		zap.Int("rps", cfg.RateLimiter.RPS),
+		zap.Int("burst", cfg.RateLimiter.Burst),
+	)
 }
 
 // GetRateLimiter retrieves a rate limiter for the given serviceName.
@@ -58,7 +62,7 @@ func ExecuteWithRateLimiting(ctx context.Context, serviceName string, fn func() 
 
 	// Wait for permission to proceed
 	if err := rl.limiter.Wait(ctx); err != nil {
-		rl.obs.Logger.Warn("Rate limit exceeded", zap.String("serviceName", serviceName), zap.Error(err))
+		rl.logger.Warn("Rate limit exceeded", zap.String("serviceName", serviceName), zap.Error(err))
 		CountRateLimit(serviceName) // Update metric for rate limit reached
 		return err
 	}
