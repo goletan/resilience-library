@@ -39,7 +39,7 @@ func Init(cfg *types.ResilienceConfig, serviceName string) {
 	})
 }
 
-// GetInstance returns current insteance of the Bulkhead.
+// GetInstance returns current instance of the Bulkhead.
 func GetInstance() *Bulkhead {
 	return bulkheadInstance
 }
@@ -65,7 +65,7 @@ func (b *Bulkhead) Execute(ctx context.Context, fn func() error, fallback func()
 
 	case <-time.After(b.timeout):
 		logger.Warn("Bulkhead limit reached", zap.String("service", b.serviceName), zap.Int("occupied_slots", b.Usage()), zap.Int("total_capacity", b.capacity))
-		CountBulkheadLimitReached(b.serviceName)
+		CountLimitReached(b.serviceName)
 		if fallback != nil {
 			return fallback()
 		}

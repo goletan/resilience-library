@@ -10,8 +10,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// RetryPolicy holds settings for retry behavior.
-type RetryPolicy struct {
+// Policy holds settings for retry behavior.
+type Policy struct {
 	MaxRetries     int
 	InitialBackoff time.Duration
 	MaxBackoff     time.Duration
@@ -20,7 +20,7 @@ type RetryPolicy struct {
 	Logger         *logger.ZapLogger
 }
 
-var _ types.RetryPolicyInterface = (*RetryPolicy)(nil)
+var _ types.RetryPolicyInterface = (*Policy)(nil)
 
 const (
 	operationName       = "operation_name"
@@ -32,9 +32,9 @@ const (
 	retryWithBackoffMsg = "Retry attempt with backoff"
 )
 
-// NewRetryPolicy initializes a new RetryPolicy based on the configuration.
-func NewRetryPolicy(cfg *types.ResilienceConfig, log *logger.ZapLogger) *RetryPolicy {
-	return &RetryPolicy{
+// NewRetryPolicy initializes a new Policy based on the configuration.
+func NewRetryPolicy(cfg *types.ResilienceConfig, log *logger.ZapLogger) *Policy {
+	return &Policy{
 		MaxRetries:     cfg.Retry.MaxRetries,
 		InitialBackoff: cfg.Retry.InitialBackoff,
 		MaxBackoff:     cfg.Retry.MaxBackoff,
@@ -44,7 +44,7 @@ func NewRetryPolicy(cfg *types.ResilienceConfig, log *logger.ZapLogger) *RetryPo
 	}
 }
 
-func (rp *RetryPolicy) ExecuteWithRetry(ctx context.Context, operation func() error) error {
+func (rp *Policy) ExecuteWithRetry(ctx context.Context, operation func() error) error {
 	currentBackoff := rp.InitialBackoff
 
 	for attempt := 0; attempt < rp.MaxRetries; attempt++ {
@@ -53,16 +53,16 @@ func (rp *RetryPolicy) ExecuteWithRetry(ctx context.Context, operation func() er
 		}
 	}
 
-	CountRetryAttempt(operationName, exceededRetriesMsg)
+	CountAttempt(operationName, exceededRetriesMsg)
 	return ctx.Err()
 }
 
-func (rp *RetryPolicy) tryOperation(ctx context.Context, operation func() error, currentBackoff *time.Duration, attempt int) error {
+func (rp *Policy) tryOperation(ctx context.Context, operation func() error, currentBackoff *time.Duration, attempt int) error {
 	start := time.Now()
 	err := operation()
 	if err == nil {
-		CountRetryAttempt(operationName, successStatus)
-		TrackRetryLatency(operationName, time.Since(start))
+		CountAttempt(operationName, successStatus)
+		TrackLatency(operationName, time.Since(start))
 		return nil
 	}
 
@@ -84,20 +84,20 @@ func (rp *RetryPolicy) tryOperation(ctx context.Context, operation func() error,
 	return nil
 }
 
-func (rp *RetryPolicy) logRetryAttempt(err error, attempt int) {
+func (rp *Policy) logRetryAttempt(err error, attempt int) {
 	rp.Logger.Warn(operationFailedMsg, zap.Error(err), zap.Int("attempt", attempt+1))
 }
 
-func (rp *RetryPolicy) logFailure(err error) {
+func (rp *Policy) logFailure(err error) {
 	rp.Logger.Warn(nonRetryableErrMsg, zap.Error(err))
-	CountRetryAttempt(operationName, failureStatus)
+	CountAttempt(operationName, failureStatus)
 }
 
-func (rp *RetryPolicy) logBackoff(attempt int, waitTime time.Duration) {
+func (rp *Policy) logBackoff(attempt int, waitTime time.Duration) {
 	rp.Logger.Warn(retryWithBackoffMsg, zap.Int("attempt", attempt+1), zap.Duration("wait_time", waitTime))
 }
 
-func (rp *RetryPolicy) handleRetry(ctx context.Context, waitTime time.Duration) error {
+func (rp *Policy) handleRetry(ctx context.Context, waitTime time.Duration) error {
 	retryCtx, cancel := context.WithTimeout(ctx, waitTime)
 	defer cancel()
 
@@ -110,7 +110,7 @@ func (rp *RetryPolicy) handleRetry(ctx context.Context, waitTime time.Duration) 
 }
 
 // calculateBackoffWithJitter returns a randomized backoff duration using jitter.
-func (rp *RetryPolicy) calculateBackoffWithJitter(baseBackoff time.Duration) time.Duration {
+func (rp *Policy) calculateBackoffWithJitter(baseBackoff time.Duration) time.Duration {
 	jitter := time.Duration(rand.Int63n(int64(baseBackoff)))
 	return baseBackoff + jitter
 }

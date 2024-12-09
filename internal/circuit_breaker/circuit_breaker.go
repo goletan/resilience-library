@@ -82,7 +82,7 @@ func (c *CircuitBreaker) Execute(ctx context.Context, operation func() error, fa
 }
 
 // Shutdown gracefully shuts down the circuit breaker and releases any resources.
-func (c *CircuitBreaker) Shutdown(ctx context.Context) error {
+func (c *CircuitBreaker) Shutdown(ctx *context.Context) error {
 	c.logger.Info("Shutting down circuit breaker")
 	return nil
 }

@@ -5,10 +5,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type BulkheadMetrics struct{}
+// Metrics represents the metrics-related operations, including registration with a monitoring system.
+type Metrics struct{}
 
 var (
-	BulkheadLimitReached = prometheus.NewCounterVec(
+	// LimitReached is a CounterVec metric that tracks the number of times bulkhead limits are reached, labeled by service.
+	LimitReached = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
 			Subsystem: "resilience",
@@ -19,18 +21,21 @@ var (
 	)
 )
 
+// InitMetrics registers and initializes metrics for observability components.
 func InitMetrics(observer *observability.Observability) {
-	observer.Metrics.Register(&BulkheadMetrics{})
+	observer.Metrics.Register(&Metrics{})
 }
 
-func (bm *BulkheadMetrics) Register() error {
-	if err := prometheus.Register(BulkheadLimitReached); err != nil {
+// Register attempts to register the LimitReached metric with the Prometheus registry.
+// Returns an error if registration fails.
+func (bm *Metrics) Register() error {
+	if err := prometheus.Register(LimitReached); err != nil {
 		return err
 	}
 	return nil
 }
 
-// CountBulkheadLimitReached logs when a bulkhead limit is reached for a specific service.
-func CountBulkheadLimitReached(service string) {
-	BulkheadLimitReached.WithLabelValues(service).Inc()
+// CountLimitReached logs when a bulkhead limit is reached for a specific service.
+func CountLimitReached(service string) {
+	LimitReached.WithLabelValues(service).Inc()
 }

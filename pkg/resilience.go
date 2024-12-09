@@ -19,7 +19,7 @@ type DefaultResilienceService struct {
 	ShouldRetry    func(error) bool
 	Observability  *observability.Observability
 	CircuitBreaker *circuit_breaker.CircuitBreaker
-	RetryPolicy    *retry.RetryPolicy
+	RetryPolicy    *retry.Policy
 }
 
 func NewResilienceService(serviceName string, obs *observability.Observability, shouldRetry func(error) bool, callbacks *res.CircuitBreakerCallbacks) *DefaultResilienceService {
@@ -60,7 +60,7 @@ func (r *DefaultResilienceService) ExecuteWithRetry(ctx context.Context, operati
 }
 
 // Shutdown gracefully shuts down the resilience service, releasing any resources held by components.
-func (r *DefaultResilienceService) Shutdown(ctx context.Context) error {
+func (r *DefaultResilienceService) Shutdown(ctx *context.Context) error {
 	r.Observability.Logger.Info("Shutting down resilience service")
 
 	// Add shutdown logic here for each resilience component if necessary.

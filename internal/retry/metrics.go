@@ -7,11 +7,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type RetryMetrics struct{}
+type Metrics struct{}
 
-// Retry Metrics: Track retry attempts and latency.
 var (
-	RetryAttempts = prometheus.NewCounterVec(
+	// Attempts counts the number of retry attempts for operations, labeled by operation type and status.
+	Attempts = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
 			Subsystem: "resilience",
@@ -21,7 +21,8 @@ var (
 		[]string{"operation", "status"},
 	)
 
-	RetryLatency = prometheus.NewHistogramVec(
+	// Latency records the latency of retry attempts in seconds, labeled by operation, using default Prometheus buckets.
+	Latency = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: "goletan",
 			Subsystem: "resilience",
@@ -34,27 +35,27 @@ var (
 )
 
 func InitMetrics(observer *observability.Observability) {
-	observer.Metrics.Register(&RetryMetrics{})
+	observer.Metrics.Register(&Metrics{})
 }
 
-func (rm *RetryMetrics) Register() error {
-	if err := prometheus.Register(RetryAttempts); err != nil {
+func (rm *Metrics) Register() error {
+	if err := prometheus.Register(Attempts); err != nil {
 		return err
 	}
 
-	if err := prometheus.Register(RetryLatency); err != nil {
+	if err := prometheus.Register(Latency); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// CountRetryAttempt logs retry attempts for operations.
-func CountRetryAttempt(operation, status string) {
-	RetryAttempts.WithLabelValues(operation, status).Inc()
+// CountAttempt logs retry attempts for operations.
+func CountAttempt(operation, status string) {
+	Attempts.WithLabelValues(operation, status).Inc()
 }
 
-// TrackRetryLatency records the latency of a retry attempt.
-func TrackRetryLatency(operation string, latency time.Duration) {
-	RetryLatency.WithLabelValues(operation).Observe(latency.Seconds())
+// TrackLatency records the latency of a retry attempt.
+func TrackLatency(operation string, latency time.Duration) {
+	Latency.WithLabelValues(operation).Observe(latency.Seconds())
 }
