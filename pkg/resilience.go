@@ -43,7 +43,7 @@ func NewResilienceService(serviceName string, obs *observability.Observability, 
 	cb := circuit_breaker.NewCircuitBreaker(cfg, internalCallbacks, obs.Logger)
 	rate_limiter.NewRateLimiter(cfg, serviceName, obs.Logger)
 
-	retryPolicy := retry.NewRetryPolicy(cfg, obs)
+	retryPolicy := retry.NewRetryPolicy(cfg, obs.Logger)
 
 	return &DefaultResilienceService{
 		MaxRetries:     cfg.Retry.MaxRetries,
