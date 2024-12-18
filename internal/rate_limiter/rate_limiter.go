@@ -3,7 +3,7 @@ package rate_limiter
 import (
 	"context"
 	"fmt"
-	"github.com/goletan/observability/shared/logger"
+	observability "github.com/goletan/observability/pkg"
 	"sync"
 	"time"
 
@@ -15,7 +15,7 @@ import (
 // RateLimiter defines a rate limiter with specific settings.
 type RateLimiter struct {
 	limiter *rate.Limiter
-	logger  *logger.ZapLogger
+	obs     *observability.Observability
 }
 
 // rateLimiterRegistry stores multiple rate limiters for different serviceNames.
@@ -25,17 +25,17 @@ var (
 )
 
 // NewRateLimiter initializes a new rate limiter for a given serviceName and configuration.
-func NewRateLimiter(cfg *types.ResilienceConfig, serviceName string, log *logger.ZapLogger) {
+func NewRateLimiter(cfg *types.ResilienceConfig, serviceName string, obs *observability.Observability) {
 	mu.Lock()
 	defer mu.Unlock()
 
 	// Initialize a new rate limiter for the given serviceName
 	rateLimiterRegistry[serviceName] = &RateLimiter{
 		limiter: rate.NewLimiter(rate.Limit(cfg.RateLimiter.RPS), cfg.RateLimiter.Burst),
-		logger:  log,
+		obs:     obs,
 	}
 
-	log.Info(
+	obs.Logger.Info(
 		"Rate limiter initialized",
 		zap.String("serviceName", serviceName),
 		zap.Int("rps", cfg.RateLimiter.RPS),
@@ -62,7 +62,7 @@ func ExecuteWithRateLimiting(ctx context.Context, serviceName string, fn func() 
 
 	// Wait for permission to proceed
 	if err := rl.limiter.Wait(ctx); err != nil {
-		rl.logger.Warn("Rate limit exceeded", zap.String("serviceName", serviceName), zap.Error(err))
+		rl.obs.Logger.Warn("Rate limit exceeded", zap.String("serviceName", serviceName), zap.Error(err))
 		CountRateLimit(serviceName) // Update metric for rate limit reached
 		return err
 	}

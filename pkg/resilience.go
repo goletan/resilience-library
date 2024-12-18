@@ -23,7 +23,7 @@ type DefaultResilienceService struct {
 }
 
 func NewResilienceService(serviceName string, obs *observability.Observability, shouldRetry func(error) bool, callbacks *res.CircuitBreakerCallbacks) *DefaultResilienceService {
-	cfg, err := config.LoadResilienceConfig(obs.Logger)
+	cfg, err := config.LoadResilienceConfig(obs)
 	if err != nil {
 		obs.Logger.Fatal("Failed to load resilience configuration", zap.Error(err))
 	}
@@ -40,10 +40,10 @@ func NewResilienceService(serviceName string, obs *observability.Observability, 
 		OnFailure:     callbacks.OnFailure,
 	}
 
-	cb := circuit_breaker.NewCircuitBreaker(cfg, internalCallbacks, obs.Logger)
-	rate_limiter.NewRateLimiter(cfg, serviceName, obs.Logger)
+	cb := circuit_breaker.NewCircuitBreaker(cfg, internalCallbacks, obs)
+	rate_limiter.NewRateLimiter(cfg, serviceName, obs)
 
-	retryPolicy := retry.NewRetryPolicy(cfg, obs.Logger)
+	retryPolicy := retry.NewRetryPolicy(cfg, obs)
 
 	return &DefaultResilienceService{
 		MaxRetries:     cfg.Retry.MaxRetries,

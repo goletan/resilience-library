@@ -2,10 +2,10 @@ package retry
 
 import (
 	"context"
+	observability "github.com/goletan/observability/pkg"
 	"math/rand"
 	"time"
 
-	"github.com/goletan/observability/shared/logger"
 	"github.com/goletan/resilience/internal/types"
 	"go.uber.org/zap"
 )
@@ -17,7 +17,7 @@ type Policy struct {
 	MaxBackoff     time.Duration
 	BackoffFactor  float64
 	ShouldRetry    func(error) bool
-	Logger         *logger.ZapLogger
+	obs            *observability.Observability
 }
 
 var _ types.RetryPolicyInterface = (*Policy)(nil)
@@ -33,14 +33,14 @@ const (
 )
 
 // NewRetryPolicy initializes a new Policy based on the configuration.
-func NewRetryPolicy(cfg *types.ResilienceConfig, log *logger.ZapLogger) *Policy {
+func NewRetryPolicy(cfg *types.ResilienceConfig, obs *observability.Observability) *Policy {
 	return &Policy{
 		MaxRetries:     cfg.Retry.MaxRetries,
 		InitialBackoff: cfg.Retry.InitialBackoff,
 		MaxBackoff:     cfg.Retry.MaxBackoff,
 		BackoffFactor:  cfg.Retry.BackoffFactor,
 		ShouldRetry:    func(err error) bool { return true }, // Default retry policy
-		Logger:         log,
+		obs:            obs,
 	}
 }
 
@@ -85,16 +85,16 @@ func (rp *Policy) tryOperation(ctx context.Context, operation func() error, curr
 }
 
 func (rp *Policy) logRetryAttempt(err error, attempt int) {
-	rp.Logger.Warn(operationFailedMsg, zap.Error(err), zap.Int("attempt", attempt+1))
+	rp.obs.Logger.Warn(operationFailedMsg, zap.Error(err), zap.Int("attempt", attempt+1))
 }
 
 func (rp *Policy) logFailure(err error) {
-	rp.Logger.Warn(nonRetryableErrMsg, zap.Error(err))
+	rp.obs.Logger.Warn(nonRetryableErrMsg, zap.Error(err))
 	CountAttempt(operationName, failureStatus)
 }
 
 func (rp *Policy) logBackoff(attempt int, waitTime time.Duration) {
-	rp.Logger.Warn(retryWithBackoffMsg, zap.Int("attempt", attempt+1), zap.Duration("wait_time", waitTime))
+	rp.obs.Logger.Warn(retryWithBackoffMsg, zap.Int("attempt", attempt+1), zap.Duration("wait_time", waitTime))
 }
 
 func (rp *Policy) handleRetry(ctx context.Context, waitTime time.Duration) error {
