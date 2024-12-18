@@ -2,7 +2,6 @@ package resilience
 
 import (
 	"context"
-	res "github.com/goletan/resilience/shared/types"
 
 	"github.com/goletan/observability/pkg"
 	"github.com/goletan/resilience/internal/bulkhead"
@@ -11,6 +10,7 @@ import (
 	"github.com/goletan/resilience/internal/metrics"
 	"github.com/goletan/resilience/internal/rate_limiter"
 	"github.com/goletan/resilience/internal/retry"
+	"github.com/goletan/resilience/shared/types"
 	"go.uber.org/zap"
 )
 
@@ -22,7 +22,7 @@ type DefaultResilienceService struct {
 	RetryPolicy    *retry.Policy
 }
 
-func NewResilienceService(serviceName string, obs *observability.Observability, shouldRetry func(error) bool, callbacks *res.CircuitBreakerCallbacks) *DefaultResilienceService {
+func NewResilienceService(serviceName string, obs *observability.Observability, shouldRetry func(error) bool, callbacks *types.CircuitBreakerCallbacks) *DefaultResilienceService {
 	cfg, err := config.LoadResilienceConfig(obs)
 	if err != nil {
 		obs.Logger.Fatal("Failed to load resilience configuration", zap.Error(err))
@@ -32,7 +32,7 @@ func NewResilienceService(serviceName string, obs *observability.Observability, 
 	metrics.InitMetrics(obs)
 
 	// Convert public callbacks to internal ones
-	internalCallbacks := &res.CircuitBreakerCallbacks{
+	internalCallbacks := &types.CircuitBreakerCallbacks{
 		OnOpen:        callbacks.OnOpen,
 		OnClose:       callbacks.OnClose,
 		OnStateChange: callbacks.OnStateChange,
