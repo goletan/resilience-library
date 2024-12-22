@@ -23,7 +23,7 @@ type DefaultResilienceService struct {
 }
 
 func NewResilienceService(serviceName string, obs *observability.Observability, shouldRetry func(error) bool, callbacks *types.CircuitBreakerCallbacks) *DefaultResilienceService {
-	cfg, err := config.LoadResilienceConfig(obs)
+	cfg, err := config.LoadResilienceConfig(obs.Logger)
 	if err != nil {
 		obs.Logger.Fatal("Failed to load resilience configuration", zap.Error(err))
 	}
