@@ -1,4 +1,4 @@
-module github.com/goletan/resilience
+module github.com/goletan/resilience-library
 
 go 1.23
 

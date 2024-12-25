@@ -12,7 +12,7 @@ type CircuitBreakerInterface interface {
 	Shutdown(ctx context.Context) error
 }
 
-// CircuitBreakerCallbacks defines optional callbacks for the circuit breaker events.
+// CircuitBreakerCallbacks defines optional callbacks for the circuit breaker events-service.
 type CircuitBreakerCallbacks struct {
 	OnOpen        func(name string, from, to gobreaker.State)
 	OnClose       func(name string, from, to gobreaker.State)

@@ -1,7 +1,7 @@
 package bulkhead
 
 import (
-	observability "github.com/goletan/observability/pkg"
+	observability "github.com/goletan/observability-library/pkg"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -13,7 +13,7 @@ var (
 	LimitReached = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "resilience",
+			Subsystem: "resilience-library",
 			Name:      "bulkhead_limit_reached_total",
 			Help:      "Counts the number of times bulkhead limits have been reached.",
 		},
@@ -21,7 +21,7 @@ var (
 	)
 )
 
-// InitMetrics registers and initializes metrics for observability components.
+// InitMetrics registers and initializes metrics for observability-library components.
 func InitMetrics(observer *observability.Observability) {
 	observer.Metrics.Register(&Metrics{})
 }

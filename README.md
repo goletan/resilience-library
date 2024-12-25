@@ -25,7 +25,7 @@ The retry mechanism is useful for transient errors that are likely to succeed if
 ```go
 import (
     "context"
-    "github.com/goletan/resilience/retry"
+    "github.com/goletan/resilience-library/retry"
 )
 
 func main() {
@@ -43,8 +43,8 @@ The circuit breaker helps manage downstream dependencies by preventing repeated 
 ```go
 import (
     "context"
-    "github.com/goletan/resilience/circuit_breaker"
-    "github.com/goletan/resilience/types"
+    "github.com/goletan/resilience-library/circuit_breaker"
+    "github.com/goletan/resilience-library/types"
 )
 
 func main() {
@@ -64,7 +64,7 @@ The rate limiter enforces limits on how many operations can be performed within 
 ```go
 import (
     "context"
-    "github.com/goletan/resilience/rate_limiter"
+    "github.com/goletan/resilience-library/rate_limiter"
 )
 
 func main() {
@@ -82,7 +82,7 @@ Bulkheading limits concurrent operations to avoid resource exhaustion.
 ```go
 import (
     "context"
-    "github.com/goletan/resilience/bulkhead"
+    "github.com/goletan/resilience-library/bulkhead"
 )
 
 func main() {

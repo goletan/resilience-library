@@ -25,7 +25,7 @@ type DefaultResilienceService struct {
 func NewResilienceService(serviceName string, obs *observability.Observability, shouldRetry func(error) bool, callbacks *types.CircuitBreakerCallbacks) *DefaultResilienceService {
 	cfg, err := config.LoadResilienceConfig(obs.Logger)
 	if err != nil {
-		obs.Logger.Fatal("Failed to load resilience configuration", zap.Error(err))
+		obs.Logger.Fatal("Failed to load resilience-library configuration", zap.Error(err))
 	}
 
 	bulkhead.Init(cfg, serviceName)
@@ -59,11 +59,11 @@ func (r *DefaultResilienceService) ExecuteWithRetry(ctx context.Context, operati
 	return r.RetryPolicy.ExecuteWithRetry(ctx, operation)
 }
 
-// Shutdown gracefully shuts down the resilience service, releasing any resources held by components.
+// Shutdown gracefully shuts down the resilience-library service, releasing any resources held by components.
 func (r *DefaultResilienceService) Shutdown(ctx *context.Context) error {
-	r.Observability.Logger.Info("Shutting down resilience service")
+	r.Observability.Logger.Info("Shutting down resilience-library service")
 
-	// Add shutdown logic here for each resilience component if necessary.
+	// Add shutdown logic here for each resilience-library component if necessary.
 	if err := r.CircuitBreaker.Shutdown(ctx); err != nil {
 		r.Observability.Logger.Error("Failed to shutdown circuit breaker", zap.Error(err))
 		return err

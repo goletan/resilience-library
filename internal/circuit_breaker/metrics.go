@@ -3,7 +3,7 @@ package circuit_breaker
 import (
 	"time"
 
-	observability "github.com/goletan/observability/pkg"
+	observability "github.com/goletan/observability-library/pkg"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -13,7 +13,7 @@ var (
 	CircuitBreakerStateChange = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "resilience",
+			Subsystem: "resilience-library",
 			Name:      "circuit_breaker_state_changes_total",
 			Help:      "Tracks state changes in circuit breakers.",
 		},
@@ -23,7 +23,7 @@ var (
 	CircuitBreakerRequestCount = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "resilience",
+			Subsystem: "resilience-library",
 			Name:      "circuit_breaker_requests_total",
 			Help:      "Tracks the number of requests through the circuit breaker.",
 		},
@@ -33,7 +33,7 @@ var (
 	CircuitBreakerStateDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: "goletan",
-			Subsystem: "resilience",
+			Subsystem: "resilience-library",
 			Name:      "circuit_breaker_state_duration_seconds",
 			Help:      "Tracks the duration of time spent in each circuit breaker state.",
 			Buckets:   prometheus.DefBuckets,

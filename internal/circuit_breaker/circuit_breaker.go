@@ -3,11 +3,11 @@ package circuit_breaker
 import (
 	"context"
 	"errors"
-	observability "github.com/goletan/observability/pkg"
+	observability "github.com/goletan/observability-library/pkg"
 	"time"
 
+	sharedTypes "github.com/goletan/resilience-library/shared/types"
 	"github.com/goletan/resilience/internal/types"
-	sharedTypes "github.com/goletan/resilience/shared/types"
 	"github.com/sony/gobreaker/v2"
 	"go.uber.org/zap"
 )

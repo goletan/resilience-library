@@ -2,7 +2,7 @@ package retry
 
 import (
 	"context"
-	observability "github.com/goletan/observability/pkg"
+	observability "github.com/goletan/observability-library/pkg"
 	"math/rand"
 	"time"
 

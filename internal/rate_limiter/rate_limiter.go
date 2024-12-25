@@ -3,7 +3,7 @@ package rate_limiter
 import (
 	"context"
 	"fmt"
-	observability "github.com/goletan/observability/pkg"
+	observability "github.com/goletan/observability-library/pkg"
 	"sync"
 	"time"
 

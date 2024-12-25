@@ -3,7 +3,7 @@ package rate_limiter
 import (
 	"time"
 
-	observability "github.com/goletan/observability/pkg"
+	observability "github.com/goletan/observability-library/pkg"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -14,7 +14,7 @@ var (
 	RateLimitReached = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "resilience",
+			Subsystem: "resilience-library",
 			Name:      "rate_limit_reached_total",
 			Help:      "Counts the number of times rate limit has been reached.",
 		},
@@ -24,7 +24,7 @@ var (
 	RateLimitLatency = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: "goletan",
-			Subsystem: "resilience",
+			Subsystem: "resilience-library",
 			Name:      "rate_limit_latency_seconds",
 			Help:      "Latency for rate-limited operations in seconds.",
 			Buckets:   prometheus.DefBuckets,

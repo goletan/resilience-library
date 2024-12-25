@@ -3,7 +3,7 @@ package retry
 import (
 	"time"
 
-	observability "github.com/goletan/observability/pkg"
+	observability "github.com/goletan/observability-library/pkg"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -14,7 +14,7 @@ var (
 	Attempts = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "resilience",
+			Subsystem: "resilience-library",
 			Name:      "retry_attempts_total",
 			Help:      "Counts the number of retry attempts for operations.",
 		},
@@ -25,7 +25,7 @@ var (
 	Latency = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: "goletan",
-			Subsystem: "resilience",
+			Subsystem: "resilience-library",
 			Name:      "retry_latency_seconds",
 			Help:      "Latency of retry attempts in seconds.",
 			Buckets:   prometheus.DefBuckets,
