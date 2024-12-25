@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/goletan/resilience/internal/types"
+	"github.com/goletan/resilience-library/internal/types"
 	"go.uber.org/zap"
 )
 

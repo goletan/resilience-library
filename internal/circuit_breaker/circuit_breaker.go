@@ -6,8 +6,8 @@ import (
 	observability "github.com/goletan/observability-library/pkg"
 	"time"
 
+	"github.com/goletan/resilience-library/internal/types"
 	sharedTypes "github.com/goletan/resilience-library/shared/types"
-	"github.com/goletan/resilience/internal/types"
 	"github.com/sony/gobreaker/v2"
 	"go.uber.org/zap"
 )

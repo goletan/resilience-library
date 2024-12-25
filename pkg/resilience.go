@@ -3,14 +3,14 @@ package resilience
 import (
 	"context"
 
-	"github.com/goletan/observability/pkg"
-	"github.com/goletan/resilience/internal/bulkhead"
-	"github.com/goletan/resilience/internal/circuit_breaker"
-	"github.com/goletan/resilience/internal/config"
-	"github.com/goletan/resilience/internal/metrics"
-	"github.com/goletan/resilience/internal/rate_limiter"
-	"github.com/goletan/resilience/internal/retry"
-	"github.com/goletan/resilience/shared/types"
+	"github.com/goletan/observability-library/pkg"
+	"github.com/goletan/resilience-library/internal/bulkhead"
+	"github.com/goletan/resilience-library/internal/circuit_breaker"
+	"github.com/goletan/resilience-library/internal/config"
+	"github.com/goletan/resilience-library/internal/metrics"
+	"github.com/goletan/resilience-library/internal/rate_limiter"
+	"github.com/goletan/resilience-library/internal/retry"
+	"github.com/goletan/resilience-library/shared/types"
 	"go.uber.org/zap"
 )
 
