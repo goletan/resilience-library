@@ -13,7 +13,7 @@ var (
 	LimitReached = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "resilience-library",
+			Subsystem: "resilience_library",
 			Name:      "bulkhead_limit_reached_total",
 			Help:      "Counts the number of times bulkhead limits have been reached.",
 		},

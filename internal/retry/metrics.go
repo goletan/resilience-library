@@ -14,7 +14,7 @@ var (
 	Attempts = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "resilience-library",
+			Subsystem: "resilience_library",
 			Name:      "retry_attempts_total",
 			Help:      "Counts the number of retry attempts for operations.",
 		},
@@ -25,7 +25,7 @@ var (
 	Latency = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: "goletan",
-			Subsystem: "resilience-library",
+			Subsystem: "resilience_library",
 			Name:      "retry_latency_seconds",
 			Help:      "Latency of retry attempts in seconds.",
 			Buckets:   prometheus.DefBuckets,

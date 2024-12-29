@@ -14,7 +14,7 @@ var (
 	RateLimitReached = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "resilience-library",
+			Subsystem: "resilience_library",
 			Name:      "rate_limit_reached_total",
 			Help:      "Counts the number of times rate limit has been reached.",
 		},
@@ -24,7 +24,7 @@ var (
 	RateLimitLatency = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: "goletan",
-			Subsystem: "resilience-library",
+			Subsystem: "resilience_library",
 			Name:      "rate_limit_latency_seconds",
 			Help:      "Latency for rate-limited operations in seconds.",
 			Buckets:   prometheus.DefBuckets,

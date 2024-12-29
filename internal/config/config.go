@@ -7,9 +7,9 @@ import (
 	"go.uber.org/zap"
 )
 
-var cfg types.ResilienceConfig
-
 func LoadResilienceConfig(log *logger.ZapLogger) (*types.ResilienceConfig, error) {
+	var cfg types.ResilienceConfig
+
 	if err := config.LoadConfig("Resilience", &cfg, log); err != nil {
 		log.Error("Failed to load resilience-library configuration", zap.Error(err))
 		return nil, err
